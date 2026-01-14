@@ -35,20 +35,31 @@ public with sharing class AsynchronousTest {
         }
         insert testAccounts;
 
+        Set<Id> accIds = new Set<Id>();
+        for (Account acc : testAccounts) {
+            accIds.add(acc.Id);
+        }
+
         List<Opportunity> testOpps = new List<Opportunity>();
         for (Account acc : testAccounts) {
             testOpps.add(new Opportunity(Name = 'Test Opp for ' + acc.Name, AccountId = acc.Id, CloseDate = Date.today(), StageName = 'Prospecting'));
         }
         insert testOpps;
 
+        Set<Id> oppIds = new Set<Id>();
+        for(Opportunity opp : testOpps){
+            oppIds.add(opp.Id);
+        }
+
         // Call the method to test between the startTest and stopTest methods
         Test.startTest();
-        //YOUR CODE HERE
+        NextStepFuture.updateAllNextStep(accIds);
         Test.stopTest();
 
         // Query the updated accounts and opportunities
-        List<Account> updatedAccounts = [SELECT Id, Next_Step__c FROM Account WHERE Id IN :testAccounts];
-        List<Opportunity> updatedOpps = [SELECT Id, NextStep FROM Opportunity WHERE Id IN :testOpps];
+        List<Account> updatedAccounts = [SELECT Id, Next_Step__c FROM Account WHERE Id IN :accIds];
+        
+        List<Opportunity> updatedOpps = [SELECT Id, NextStep FROM Opportunity WHERE Id IN :oppIds];
 
         // Assert that all account's Next_Step__c fields are updated
         for (Account acc : updatedAccounts) {
@@ -148,7 +159,7 @@ public with sharing class AsynchronousTest {
         }
     }
 
-    /*  //UNCOMMENT TEST METHODS BELOW ONCE THE NextStepSchedule class is implemented
+      //UNCOMMENT TEST METHODS BELOW ONCE THE NextStepSchedule class is implemented
         //No Changes should be required to the test methods/code below other than uncommenting them
         //Manually setup the scheduled job in Salesforce to run the NextStepSchedule class
     @IsTest
@@ -189,5 +200,5 @@ public with sharing class AsynchronousTest {
             System.assertEquals('Batching the next meetings together.', opp.NextStep, 'Opportunity NextStep field was not updated correctly.');
         }
     }
-    */
+    
 }
