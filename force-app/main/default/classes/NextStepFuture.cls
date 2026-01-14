@@ -27,9 +27,39 @@ public with sharing class NextStepFuture {
      * Opportunity Next Step field is a standard field
      * Update the corresponding test class AsynchronousTest and test method nextStepFuture_testUpdateAllNextStep to cover test this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
-    //  The body of the method
-    //}
+    @future
+    public static void updateAllNextStep (Set<Id> accountIds) {
+
+        try{
+            if(accountIds.isEmpty()){
+                return;
+            }
+            String futureMeeting = 'Meeting in the future';
+            
+            List<Account> accounts = [SELECT Id, Name, Next_Step__c, (SELECT Id, Name, NextStep 
+                                    FROM opportunities) FROM Account WHERE Id IN :accountIds];
+
+            List<Account> accToUpdate = new List<Account>();
+            List<Opportunity> oppToUpdate = new List<Opportunity>();
+            
+                for(Account a : accounts){
+                        
+                        a.Next_Step__c = futureMeeting;
+                        accToUpdate.add(a);
+
+                        for(Opportunity o : a.Opportunities){
+                            o.NextStep = futureMeeting;
+                            oppToUpdate.add(o);
+                        }
+                    }
+            update accToUpdate;
+
+            update oppToUpdate;
+                }catch(Exception e){
+                    System.debug('There was an issue with updating the accounts and/or opps: ' + e.getMessage());
+                }    
+      
+    }
 
     /*
     * Question 2
@@ -42,8 +72,8 @@ public with sharing class NextStepFuture {
         Opportunity bigDeal = new Opportunity();
         insertBigDeal(bigDeal);
 
-        UserRole[] roles = [SELECT Id, Name FROM UserRole WHERE Id = :UserInfo.getUserRoleId() OR Name = 'CRO' LIMIT 1];
-        updateUserRoleName(roles);
+        //UserRole[] roles = [SELECT Id, Name FROM UserRole WHERE Id = :UserInfo.getUserRoleId() OR Name = 'CRO' LIMIT 1];
+        updateUserRoleName(UserInfo.getUserRoleId());
     }
 
     // Helper method to insert big deal
@@ -58,17 +88,18 @@ public with sharing class NextStepFuture {
 
 
     // Helper method to update role name
-    private static void updateUserRoleName(UserRole[] roles){
+    @future
+    private static void updateUserRoleName(Id roleId){
         UserRole role;
-        if (roles.isEmpty()) {
+        if (roleId == null) {
             role = new UserRole();
             role.portalType = 'None'; 
             role.CaseAccessForAccountOwner = 'Edit'; 
             // role.OpportunityAccessForAccountOwner = 'Edit'; //This may need to be uncommented depending on your orgs Organization Wide Defaults(OWD) settings. If you are receiving FIELD_INTEGRITY_EXCEPTION, field integrity exception: unknown (Opportunity access level below organization default): [unknown], uncomment this line.
         } else {
-            role = roles[0];
+            role = role = [SELECT Id, Name FROM UserRole WHERE Id = :roleId LIMIT 1];
         }
-
+        
         role.Name = 'CRO';
 
         upsert role;
